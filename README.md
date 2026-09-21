@@ -10,10 +10,11 @@ So far:
 
 - **Reads the catalog from Stripe**: every active product with its default price, in one
   call. A product without a usable price is left out.
+- **Shows the catalog on `/`**: name and price in German format. When Stripe cannot be
+  reached, the page stays and says so.
 
 Next, one step at a time (see `HELP.md` for the full path):
 
-- Show the catalog on a page, with prices in German format.
 - Buy through Stripe Checkout, and confirm the payment through a webhook, not the
   redirect.
 - Refunds and failed payments. Later a supporting membership as a subscription.

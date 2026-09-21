@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>greenshop</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; }
+        table { width: 100%; border-collapse: collapse; }
+        td { padding: .5rem 0; border-bottom: 1px solid #ddd; }
+        td.price { text-align: right; white-space: nowrap; }
+    </style>
+</head>
+<body>
+<h1>greenshop</h1>
+<p>Merchandise der Java User Group Hamburg.</p>
+
+<p id="unavailable" th:if="${unavailable}">
+    Der Katalog ist gerade nicht erreichbar. Bitte versuch es gleich noch einmal.
+</p>
+
+<p id="empty" th:if="${unavailable == null and #lists.isEmpty(products)}">
+    Im Moment gibt es nichts zu kaufen.
+</p>
+
+<table id="products" th:unless="${#lists.isEmpty(products)}">
+    <tr th:each="product : ${products}" th:attr="data-id=${product.id}">
+        <td class="name" th:text="${product.name}">T-Shirt</td>
+        <td class="price" th:text="${@prices.format(product.price)}">35,00 €</td>
+    </tr>
+</table>
+</body>
+</html>

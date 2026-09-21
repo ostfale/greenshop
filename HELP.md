@@ -42,6 +42,10 @@ end up in `.idea/workspace.xml`, which git ignores.
 ## Tests
 
 - **Unit tests** for the records: `Product`, `Money`, `StripeProperties`.
+- **Service tests** against fakes of the outgoing ports, such as `FakeProductCatalog`. No
+  mocking framework: a fake is a small class that holds what the test puts in.
+- **Web tests** with `@WebMvcTest` and a fake of the incoming port. They parse the rendered
+  page with jsoup and check what is on it, not the model.
 - **`ArchitectureTest`**: the Stripe SDK stays inside its two adapters (see below).
 - **`GreenshopApplicationTests`**: the context starts, with a dummy key.
 - **`StripeProductCatalogIT`**: talks to the real sandbox. It runs only where
@@ -57,7 +61,7 @@ Stripe's SDK does not log requests itself.
 |------|------|-------|
 | 1 | Stripe account, sandbox, CLI | done |
 | 2 | Project skeleton, `StripeClient` as a bean | done |
-| 3 | Read products and prices, show them on a page | catalog read, page open |
+| 3 | Read products and prices, show them on a page | done |
 | 4 | Stripe Checkout: a checkout session, success and cancel pages | |
 | 5 | Webhooks: `checkout.session.completed` marks an order paid | |
 | 6 | Idempotency, `metadata` and `client_reference_id` | |
@@ -95,7 +99,9 @@ at**.
 
 `Money` holds a `long` in the smallest unit of its currency (3,00 € is `300`), exactly as
 Stripe counts, with a `java.util.Currency`. It never formats itself: turning `300 EUR` into
-"3,00 €" is the page's business.
+"3,00 €" is the page's business. The templates call `@prices.format(...)`, a small bean in
+the web adapter. It takes the number of decimals from the currency, not a fixed division
+by 100.
 
 ### Test keys only, and never in a log
 
