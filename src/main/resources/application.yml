@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: greenshop
+    version: "@project.version@"
+
+server:
+  port: ${PORT:8484}
+
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY}
+
+logging:
+  level:
+    de.ostfale.greenshop: DEBUG

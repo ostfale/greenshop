@@ -3,7 +3,7 @@ package de.ostfale.greenshop;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+@SpringBootTest(properties = "stripe.secret-key=sk_test_dummy")
 class GreenshopApplicationTests {
 
     @Test
