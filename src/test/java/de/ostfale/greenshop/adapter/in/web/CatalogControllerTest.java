@@ -32,7 +32,8 @@ class CatalogControllerTest {
 
         var page = page(200);
 
-        var rows = page.select("#products tr");
+        assertThat(page.title()).isEqualTo("greenshop – Katalog");
+        var rows = page.select("#products tbody tr");
         assertThat(rows).hasSize(2);
         assertThat(rows.first().attr("data-id")).isEqualTo("prod_shirt");
         assertThat(rows.first().select(".name").text()).isEqualTo("T-Shirt weiß");

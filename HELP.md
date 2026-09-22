@@ -111,6 +111,15 @@ which Spring would otherwise bind as plain text. The key is never logged whole. 
 line shows its last four characters. A record prints all of its fields in `toString()`, so
 `StripeProperties` is never logged as a whole either.
 
+### The house style of greenroom
+
+greenshop looks like greenroom: the same colours, the two fonts Archivo and JetBrains Mono
+(both under the SIL Open Font License, served from `static/fonts`), the white bar across the
+top with the green wordmark, cards on a grey-green ground. `static/css/greenshop.css` is a
+**copy, not a shared file**. It holds only the rules greenshop uses, and a rule from greenroom
+comes over when a page needs it. Two projects with one user do not justify a design-system
+artifact. Every page takes its `head` and `topbar` from `templates/fragments/layout.html`.
+
 ### Versions
 
 Versions of libraries and plugins sit in POM properties, so that the Versions plugin can

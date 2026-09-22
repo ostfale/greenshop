@@ -1,0 +1,340 @@
+/* greenshop — the stall beside the greenroom.
+ *
+ * The house style of greenroom, taken over as it is: same colours, same two voices, same
+ * frame. Archivo carries what people read (product names, sentences), JetBrains Mono carries
+ * the facts you count with (prices, states, labels). Only what greenshop uses is here; a
+ * rule from greenroom comes over when a page needs it, not before.
+ */
+
+@font-face {
+    font-family: "Archivo";
+    src: url("/fonts/archivo-latin-wght-normal.woff2") format("woff2-variations");
+    font-weight: 100 900;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "JetBrains Mono";
+    src: url("/fonts/jetbrains-mono-latin-wght-normal.woff2") format("woff2-variations");
+    font-weight: 100 800;
+    font-display: swap;
+}
+
+:root {
+    --ink: #15211c;
+    --muted: #5d6f67;
+    --line: #dde4e0;
+    --ground: #e9edeb;
+    --surface: #ffffff;
+    --green: #14624a;
+    --action: #2b3b34;
+    --action-hover: #15211c;
+    --green-soft: #e6f0ea;
+    --amber: #9a5608;
+    --amber-soft: #f8efe2;
+    --red: #96271f;
+    --red-soft: #faeceb;
+
+    --radius: 14px;
+    --radius-sm: 8px;
+    --shadow: 0 1px 2px rgba(21, 33, 28, .05), 0 1px 1px rgba(21, 33, 28, .04);
+
+    --sans: "Archivo", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", "Consolas", monospace;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font: 400 .9375rem/1.55 var(--sans);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* --- the bar across the top ------------------------------------------------------- */
+
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: 2.5rem;
+    padding: 0 1.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+}
+
+.wordmark {
+    padding: 1rem 0;
+    color: var(--green);
+    font-weight: 800;
+    font-size: 1.0625rem;
+    letter-spacing: -.03em;
+    text-decoration: none;
+}
+
+.topbar nav {
+    display: flex;
+    gap: .25rem;
+}
+
+.topbar nav a {
+    padding: 1rem .75rem;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    font: 500 .75rem/1 var(--mono);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    text-decoration: none;
+}
+
+.topbar nav a:hover {
+    color: var(--ink);
+}
+
+.topbar nav a.here {
+    color: var(--ink);
+    border-bottom-color: var(--green);
+}
+
+/* --- page frame ------------------------------------------------------------------- */
+
+/* Narrower than greenroom's: a shop page holds a list to choose from, not a planning board. */
+main {
+    max-width: 60rem;
+    margin: 0 auto;
+    padding: 2rem 2rem 4rem;
+}
+
+main a {
+    color: var(--ink);
+    text-decoration-color: var(--line);
+    text-underline-offset: 3px;
+}
+
+main a:hover {
+    text-decoration-color: var(--green);
+}
+
+.headline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+h1 {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -.025em;
+}
+
+.back {
+    color: var(--muted);
+    font: 500 .75rem/1 var(--mono);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    text-decoration: none;
+}
+
+.back:hover {
+    color: var(--ink);
+}
+
+/* --- tiles and cards -------------------------------------------------------------- */
+
+.tile {
+    min-width: 0;
+    padding: 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.tile > h2 {
+    margin: 0 0 1.125rem;
+    color: var(--muted);
+    font: 600 .6875rem/1 var(--mono);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.card {
+    padding: 0;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+/* --- tables ----------------------------------------------------------------------- */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: .75rem 1.5rem;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+}
+
+th {
+    color: var(--muted);
+    font: 600 .6875rem/1 var(--mono);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    background: var(--surface);
+}
+
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+tbody tr:hover td {
+    background: #f7f9f8;
+}
+
+/* Numbers line up because they are set in the utility face. */
+td.data, .data {
+    font: 400 .8125rem/1.55 var(--mono);
+    font-variant-numeric: tabular-nums;
+}
+
+/* A price is read against the prices above and below it, so it stands at the right edge. */
+th.amount, td.amount {
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* --- badges ----------------------------------------------------------------------- */
+
+.badge {
+    display: inline-block;
+    padding: .1875rem .5rem;
+    background: var(--green-soft);
+    color: var(--green);
+    border-radius: 999px;
+    font: 500 .6875rem/1.3 var(--mono);
+    white-space: nowrap;
+}
+
+.badge.quiet {
+    background: var(--ground);
+    color: var(--muted);
+}
+
+.badge.warn {
+    background: var(--amber-soft);
+    color: var(--amber);
+}
+
+.badge.stop {
+    background: var(--red-soft);
+    color: var(--red);
+}
+
+/* --- buttons ---------------------------------------------------------------------- */
+
+button, .button {
+    padding: .5rem .875rem;
+    color: #fff;
+    background: var(--action);
+    border: none;
+    border-radius: var(--radius-sm);
+    font: 500 .8125rem/1.4 var(--sans);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+button:hover, .button:hover {
+    background: var(--action-hover);
+}
+
+button.secondary {
+    color: var(--muted);
+    background: var(--ground);
+}
+
+button.secondary:hover {
+    color: var(--ink);
+    background: var(--line);
+}
+
+button.link {
+    padding: 0;
+    color: var(--muted);
+    background: none;
+    font: 500 .75rem/1 var(--mono);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+button.link:hover {
+    color: var(--ink);
+    background: none;
+}
+
+/* --- notes, hints, errors --------------------------------------------------------- */
+
+.hint {
+    margin: 0 0 .875rem;
+    color: var(--muted);
+    font-size: .8125rem;
+}
+
+.error,
+.notice {
+    margin: 0 0 .875rem;
+    padding: .625rem .875rem;
+    border-radius: var(--radius-sm);
+    font-size: .8125rem;
+}
+
+.error {
+    color: var(--red);
+    background: var(--red-soft);
+}
+
+.notice {
+    color: var(--amber);
+    background: var(--amber-soft);
+}
+
+/* An empty list says so where the rows would stand. */
+.empty {
+    padding: 2.5rem 1.25rem;
+    color: var(--muted);
+    text-align: center;
+}
+
+/* --- narrow screens --------------------------------------------------------------- */
+
+@media (max-width: 34rem) {
+    main {
+        padding: 1.25rem 1rem 3rem;
+    }
+
+    th, td {
+        padding: .75rem 1rem;
+    }
+
+    .topbar {
+        gap: 1rem;
+        padding: 0 1rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation: none !important;
+        transition: none !important;
+    }
+}

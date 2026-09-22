@@ -1,33 +1,39 @@
 <!DOCTYPE html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>greenshop</title>
-    <style>
-        body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; }
-        table { width: 100%; border-collapse: collapse; }
-        td { padding: .5rem 0; border-bottom: 1px solid #ddd; }
-        td.price { text-align: right; white-space: nowrap; }
-    </style>
-</head>
+<head th:replace="~{fragments/layout :: head('Katalog')}"></head>
 <body>
-<h1>greenshop</h1>
-<p>Merchandise der Java User Group Hamburg.</p>
+<header th:replace="~{fragments/layout :: topbar('catalog')}"></header>
 
-<p id="unavailable" th:if="${unavailable}">
-    Der Katalog ist gerade nicht erreichbar. Bitte versuch es gleich noch einmal.
-</p>
+<main>
+    <div class="headline">
+        <h1>Katalog</h1>
+    </div>
+    <p class="hint">Merchandise der Java User Group Hamburg.</p>
 
-<p id="empty" th:if="${unavailable == null and #lists.isEmpty(products)}">
-    Im Moment gibt es nichts zu kaufen.
-</p>
+    <p id="unavailable" class="error" th:if="${unavailable}">
+        Der Katalog ist gerade nicht erreichbar. Bitte versuch es gleich noch einmal.
+    </p>
 
-<table id="products" th:unless="${#lists.isEmpty(products)}">
-    <tr th:each="product : ${products}" th:attr="data-id=${product.id}">
-        <td class="name" th:text="${product.name}">T-Shirt</td>
-        <td class="price" th:text="${@prices.format(product.price)}">35,00 €</td>
-    </tr>
-</table>
+    <div class="card">
+        <p id="empty" class="empty" th:if="${unavailable == null and #lists.isEmpty(products)}">
+            Im Moment gibt es nichts zu kaufen.
+        </p>
+
+        <table id="products" th:unless="${#lists.isEmpty(products)}">
+            <thead>
+            <tr>
+                <th>Produkt</th>
+                <th class="amount">Preis</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="product : ${products}" th:attr="data-id=${product.id}">
+                <td class="name" th:text="${product.name}">T-Shirt</td>
+                <td class="price data amount" th:text="${@prices.format(product.price)}">35,00 €</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
 </body>
 </html>
