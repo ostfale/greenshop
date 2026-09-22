@@ -214,6 +214,26 @@ th.amount, td.amount {
     white-space: nowrap;
 }
 
+/* The button at the end of a row takes only the room it needs, the name gets the rest. */
+td.action {
+    width: 1%;
+    text-align: right;
+    white-space: nowrap;
+}
+
+td.action form {
+    margin: 0;
+}
+
+tr.total td {
+    border-top: 1px solid var(--line);
+    font-weight: 600;
+}
+
+main > .hint {
+    margin-top: 1rem;
+}
+
 /* --- badges ----------------------------------------------------------------------- */
 
 .badge {

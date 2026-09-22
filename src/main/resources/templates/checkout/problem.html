@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Kauf')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar('checkout')}"></header>
+
+<main>
+    <div class="headline">
+        <h1>Das hat nicht geklappt</h1>
+        <a class="back" th:href="@{/}">Zurück zum Katalog</a>
+    </div>
+
+    <p id="notForSale" class="error" th:if="${reason == 'notForSale'}">
+        Dieses Produkt gibt es nicht (mehr) zu kaufen.
+    </p>
+    <p id="unavailable" class="error" th:if="${reason == 'unavailable'}">
+        Die Bezahlung ist gerade nicht erreichbar. Es wurde nichts berechnet – bitte versuch es
+        gleich noch einmal.
+    </p>
+    <p id="unknown" class="error" th:if="${reason == 'unknown'}">
+        Zu diesem Einkauf gibt es keine Angaben.
+    </p>
+</main>
+</body>
+</html>

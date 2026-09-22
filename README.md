@@ -12,11 +12,14 @@ So far:
   call. A product without a usable price is left out.
 - **Shows the catalog on `/`**: name and price in German format. When Stripe cannot be
   reached, the page stays and says so.
+- **Sells through Stripe Checkout**: a buy button per product leads to Stripe's hosted payment
+  page, where the customer picks how many (1 to 10) and gives a shipping address in Germany.
+  Afterwards a thank-you page shows what was bought
+  and whether Stripe reports it paid. A cancel leads back to the catalog.
 
 Next, one step at a time (see `HELP.md` for the full path):
 
-- Buy through Stripe Checkout, and confirm the payment through a webhook, not the
-  redirect.
+- Confirm the payment through a webhook, not the redirect, and keep the order.
 - Refunds and failed payments. Later a supporting membership as a subscription.
 
 ## Stack

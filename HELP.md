@@ -64,7 +64,7 @@ Stripe's SDK does not log requests itself.
 | 1 | Stripe account, sandbox, CLI | done |
 | 2 | Project skeleton, `StripeClient` as a bean | done |
 | 3 | Read products and prices, show them on a page | done |
-| 4 | Stripe Checkout: a checkout session, success and cancel pages | session opened, pages open |
+| 4 | Stripe Checkout: a checkout session, success and cancel pages | done |
 | 5 | Webhooks: `checkout.session.completed` marks an order paid | |
 | 6 | Idempotency, `metadata` and `client_reference_id` | |
 | 7 | Declined cards, 3-D Secure, refunds | |
@@ -102,6 +102,26 @@ the browser either. The form sends only the product id. `StripePaymentPage` fetc
 product with its default price again and opens the checkout session with that price. One call
 more per purchase, and the amount charged is always Stripe's current one. The rule for what
 counts as sellable (a fixed amount, paid once) is in `StripePrices` and serves both.
+
+The quantity is chosen on Stripe's page, not in the shop: the line item carries
+`adjustable_quantity` from 1 to 10, and Stripe adds up the total. That keeps the form at a
+single field and the browser out of anything that changes the amount. The thank-you page
+reads the quantity back from the line items. A cart with several products would be a feature
+of its own, since it needs somewhere to live between the pages.
+
+### The way back from Stripe shows, it does not decide
+
+Stripe sends the customer back to `/checkout/success?session_id=...` or to
+`/checkout/cancel`. The addresses and the parameter name are in `config.ReturnAddresses`,
+which the web adapter serves and the Stripe adapter hands out, so the two cannot drift apart.
+The thank-you page looks the session up (with `expand` on `line_items`) and shows what Stripe
+reports right now, including "noch nicht bezahlt". It never marks anything as paid: the
+customer may close the tab before coming back, and anybody can call the address with any id.
+That is step 5, the webhook. The buy form is a POST answered with **303 See Other**, so the
+browser follows it with a GET and a reload does not send the form again.
+
+Trying it: `4242 4242 4242 4242` pays, `4000 0027 6000 3184` asks for 3-D Secure, and
+`4000 0000 0000 9995` is declined. Any future date and any CVC work.
 
 ### Money in the smallest unit
 

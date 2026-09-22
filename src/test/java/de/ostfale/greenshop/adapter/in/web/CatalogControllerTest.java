@@ -42,6 +42,31 @@ class CatalogControllerTest {
     }
 
     @Test
+    void offersEachProductToBuyByItsIdAlone() throws Exception {
+        catalog.offer(new Product("prod_shirt", "T-Shirt weiß", Money.of(3500, "eur")));
+
+        var form = page(200).select("#products tbody tr form").first();
+
+        assertThat(form).isNotNull();
+        assertThat(form.attr("method")).isEqualTo("post");
+        assertThat(form.attr("action")).isEqualTo("/checkout");
+        assertThat(form.select("input").eachAttr("name")).containsExactly("productId");
+        assertThat(form.select("input[name=productId]").val()).isEqualTo("prod_shirt");
+    }
+
+    @Test
+    void saysThatNothingWasChargedAfterACancel() throws Exception {
+        catalog.offer(new Product("prod_shirt", "T-Shirt weiß", Money.of(3500, "eur")));
+
+        var html = mvc.perform(get("/").flashAttr("cancelled", true))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(Jsoup.parse(html).select("#cancelled")).hasSize(1);
+        assertThat(page(200).select("#cancelled")).isEmpty();
+    }
+
+    @Test
     void saysSoWhenThereIsNothingToBuy() throws Exception {
         catalog.offer();
 

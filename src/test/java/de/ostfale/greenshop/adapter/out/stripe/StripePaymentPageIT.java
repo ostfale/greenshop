@@ -40,6 +40,11 @@ class StripePaymentPageIT {
     }
 
     @Test
+    void knowsNothingOfASessionThatDoesNotExist() {
+        assertThat(paymentPage.find("cs_test_doesnotexist")).isEmpty();
+    }
+
+    @Test
     void refusesAProductThatDoesNotExist() {
         assertThatExceptionOfType(ProductNotForSale.class)
                 .isThrownBy(() -> paymentPage.open("prod_doesnotexist"));

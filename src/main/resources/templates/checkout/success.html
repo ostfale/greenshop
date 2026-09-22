@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Danke')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar('checkout')}"></header>
+
+<main>
+    <div class="headline">
+        <h1>Danke für deinen Einkauf</h1>
+        <a class="back" th:href="@{/}">Zurück zum Katalog</a>
+    </div>
+
+    <div class="card">
+        <table id="purchase">
+            <thead>
+            <tr>
+                <th class="amount">Menge</th>
+                <th>Produkt</th>
+                <th class="amount">Zahlung</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${purchase.items}">
+                <td class="quantity data amount" th:text="${item.quantity} + ' ×'">2 ×</td>
+                <td class="item" th:text="${item.name}">T-Shirt weiß</td>
+                <td></td>
+            </tr>
+            <tr class="total">
+                <td colspan="2">
+                    <span id="paid" class="badge" th:if="${purchase.paid}">bezahlt</span>
+                    <span id="open" class="badge warn" th:unless="${purchase.paid}">noch nicht bezahlt</span>
+                </td>
+                <td class="data amount" th:text="${@prices.format(purchase.total)}">35,00 €</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p class="hint">
+        Diese Seite zeigt, was Stripe gerade meldet. Verbindlich wird der Kauf, sobald Stripe
+        die Zahlung ausdrücklich bestätigt.
+    </p>
+</main>
+</body>
+</html>
