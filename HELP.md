@@ -33,6 +33,8 @@ end up in `.idea/workspace.xml`, which git ignores.
     ./mvnw spring-boot:run     # needs STRIPE_SECRET_KEY
 
 - **Port**: 8484, overridable with `PORT`.
+- **Base URL**: `greenshop.base-url`, by default `http://localhost:<port>`, overridable with
+  `BASE_URL`. Stripe sends the customer back to addresses below it.
 - **Logging**: to the console. `de.ostfale.greenshop` logs on DEBUG and everything else on
   INFO, so the application's own lines are not drowned out by Spring and Tomcat.
 - **Version**: the banner shows the version from the POM. Maven filters it into
@@ -48,7 +50,7 @@ end up in `.idea/workspace.xml`, which git ignores.
   page with jsoup and check what is on it, not the model.
 - **`ArchitectureTest`**: the Stripe SDK stays inside its two adapters (see below).
 - **`GreenshopApplicationTests`**: the context starts, with a dummy key.
-- **`StripeProductCatalogIT`**: talks to the real sandbox. It runs only where
+- **`StripeProductCatalogIT`** and **`StripePaymentPageIT`**: talk to the real sandbox. It runs only where
   `STRIPE_SECRET_KEY` is set and skips itself otherwise. Maven's surefire plugin does not
   pick up `*IT` classes, so `mvnw verify` never needs Stripe.
 
@@ -62,7 +64,7 @@ Stripe's SDK does not log requests itself.
 | 1 | Stripe account, sandbox, CLI | done |
 | 2 | Project skeleton, `StripeClient` as a bean | done |
 | 3 | Read products and prices, show them on a page | done |
-| 4 | Stripe Checkout: a checkout session, success and cancel pages | |
+| 4 | Stripe Checkout: a checkout session, success and cancel pages | session opened, pages open |
 | 5 | Webhooks: `checkout.session.completed` marks an order paid | |
 | 6 | Idempotency, `metadata` and `client_reference_id` | |
 | 7 | Declined cards, 3-D Secure, refunds | |
@@ -94,6 +96,12 @@ would be a second truth to keep in step. The domain `Product` therefore carries 
 one request brings the prices along. Without `expand` the price is only an id. A product
 without a default price, or with a price that has no fixed amount, is **left out, not guessed
 at**.
+
+The payment page does not trust the catalog it showed a minute ago, and it does not trust
+the browser either. The form sends only the product id. `StripePaymentPage` fetches that
+product with its default price again and opens the checkout session with that price. One call
+more per purchase, and the amount charged is always Stripe's current one. The rule for what
+counts as sellable (a fixed amount, paid once) is in `StripePrices` and serves both.
 
 ### Money in the smallest unit
 

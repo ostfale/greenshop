@@ -64,7 +64,7 @@ class StripeProductCatalog implements ProductCatalog {
      * Takes the fields, not Stripe's product: its class shares the name with ours.
      */
     private static Optional<Product> toProduct(String id, String name, Price price) {
-        if (price == null || price.getUnitAmount() == null) {
+        if (StripePrices.notForSale(price)) {
             return Optional.empty();
         }
         var money = Money.of(price.getUnitAmount(), price.getCurrency());

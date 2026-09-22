@@ -6,6 +6,9 @@ spring:
 server:
   port: ${PORT:8484}
 
+greenshop:
+  base-url: ${BASE_URL:http://localhost:${server.port}}
+
 stripe:
   secret-key: ${STRIPE_SECRET_KEY}
 
