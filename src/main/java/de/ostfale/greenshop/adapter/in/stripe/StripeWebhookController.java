@@ -4,6 +4,7 @@ import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
 import com.stripe.net.Webhook;
 import de.ostfale.greenshop.application.port.in.ConfirmPayment;
+import de.ostfale.greenshop.application.port.in.PaymentNotification;
 import de.ostfale.greenshop.application.port.out.PaymentUnavailable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,9 +61,9 @@ class StripeWebhookController {
         log.debug("StripeWebhookController :: {} {} (API {})", event.getType(), event.getId(), event.getApiVersion());
         try {
             switch (event.getType()) {
-                case CHECKOUT_COMPLETED -> confirmPayment.checkoutCompleted(sessionIdOf(event));
-                case ASYNC_PAYMENT_SUCCEEDED -> confirmPayment.paymentSucceeded(sessionIdOf(event));
-                case ASYNC_PAYMENT_FAILED -> confirmPayment.paymentFailed(sessionIdOf(event));
+                case CHECKOUT_COMPLETED -> confirmPayment.checkoutCompleted(notificationOf(event));
+                case ASYNC_PAYMENT_SUCCEEDED -> confirmPayment.paymentSucceeded(notificationOf(event));
+                case ASYNC_PAYMENT_FAILED -> confirmPayment.paymentFailed(notificationOf(event));
                 default -> log.debug("StripeWebhookController :: {} ignored", event.getType());
             }
         } catch (PaymentUnavailable e) {
@@ -76,8 +77,13 @@ class StripeWebhookController {
         return ResponseEntity.ok().build();
     }
 
-    private static String sessionIdOf(Event event) {
+    /**
+     * The id of the event names the message, the id inside its object names the checkout. The
+     * first keeps a message from being dealt with twice, the second finds the order.
+     */
+    private static PaymentNotification notificationOf(Event event) {
         var raw = event.getDataObjectDeserializer().getRawJson();
-        return JsonMapper.shared().readTree(raw).path("id").asString();
+        var sessionId = JsonMapper.shared().readTree(raw).path("id").asString();
+        return new PaymentNotification(event.getId(), sessionId);
     }
 }

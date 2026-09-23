@@ -10,6 +10,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -50,8 +52,19 @@ class CatalogControllerTest {
         assertThat(form).isNotNull();
         assertThat(form.attr("method")).isEqualTo("post");
         assertThat(form.attr("action")).isEqualTo("/checkout");
-        assertThat(form.select("input").eachAttr("name")).containsExactly("productId");
+        assertThat(form.select("input").eachAttr("name")).containsExactly("productId", "attempt");
         assertThat(form.select("input[name=productId]").val()).isEqualTo("prod_shirt");
+        assertThat(UUID.fromString(form.select("input[name=attempt]").val())).isNotNull();
+    }
+
+    @Test
+    void givesEachRenderingOfThePageItsOwnAttempt() throws Exception {
+        catalog.offer(new Product("prod_shirt", "T-Shirt weiß", Money.of(3500, "eur")));
+
+        var first = page(200).select("input[name=attempt]").val();
+        var second = page(200).select("input[name=attempt]").val();
+
+        assertThat(first).isNotEqualTo(second);
     }
 
     @Test

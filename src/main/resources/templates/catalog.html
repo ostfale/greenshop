@@ -38,6 +38,7 @@
                 <td class="action">
                     <form method="post" th:action="@{/checkout}">
                         <input type="hidden" name="productId" th:value="${product.id}">
+                        <input type="hidden" name="attempt" th:value="${attempts.get(product.id)}">
                         <button type="submit">Kaufen</button>
                     </form>
                 </td>

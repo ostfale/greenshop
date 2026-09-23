@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -26,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CheckoutControllerTest {
 
     private static final CheckoutSummary.Item SCARVES = new CheckoutSummary.Item("Schal", 2);
+    private static final UUID ATTEMPT = UUID.fromString("6f1b2a3c-0000-4000-8000-000000000001");
 
     @Autowired
     private MockMvc mvc;
@@ -37,16 +39,26 @@ class CheckoutControllerTest {
     void sendsTheBuyerToThePaymentPageWithSeeOther() throws Exception {
         purchase.selling("prod_scarf");
 
-        mvc.perform(post("/checkout").param("productId", "prod_scarf"))
+        mvc.perform(post("/checkout").param("productId", "prod_scarf").param("attempt", ATTEMPT.toString()))
                 .andExpect(status().isSeeOther())
                 .andExpect(header().string("Location", "https://pay.example.org/prod_scarf"));
+
+        assertThat(purchase.lastAttempt()).isEqualTo(ATTEMPT);
+    }
+
+    @Test
+    void refusesAnAttemptThatIsNoAttempt() throws Exception {
+        purchase.selling("prod_scarf");
+
+        mvc.perform(post("/checkout").param("productId", "prod_scarf").param("attempt", "not-a-uuid"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
     void refusesAProductThatIsNotForSale() throws Exception {
         purchase.selling();
 
-        var page = page(post("/checkout").param("productId", "prod_gone"), 404);
+        var page = page(post("/checkout").param("productId", "prod_gone").param("attempt", ATTEMPT.toString()), 404);
 
         assertThat(page.select("#notForSale")).hasSize(1);
     }
@@ -55,7 +67,7 @@ class CheckoutControllerTest {
     void saysSoWhenThePaymentIsDown() throws Exception {
         purchase.goDown();
 
-        var page = page(post("/checkout").param("productId", "prod_scarf"), 503);
+        var page = page(post("/checkout").param("productId", "prod_scarf").param("attempt", ATTEMPT.toString()), 503);
 
         assertThat(page.select("#unavailable")).hasSize(1);
     }

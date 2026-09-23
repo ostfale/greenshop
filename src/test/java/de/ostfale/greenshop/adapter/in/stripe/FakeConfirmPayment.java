@@ -1,6 +1,7 @@
 package de.ostfale.greenshop.adapter.in.stripe;
 
 import de.ostfale.greenshop.application.port.in.ConfirmPayment;
+import de.ostfale.greenshop.application.port.in.PaymentNotification;
 import de.ostfale.greenshop.application.port.out.PaymentUnavailable;
 
 import java.util.ArrayList;
@@ -32,24 +33,24 @@ class FakeConfirmPayment implements ConfirmPayment {
     }
 
     @Override
-    public void checkoutCompleted(String reference) {
-        record("completed " + reference);
+    public void checkoutCompleted(PaymentNotification notification) {
+        record("completed", notification);
     }
 
     @Override
-    public void paymentSucceeded(String reference) {
-        record("succeeded " + reference);
+    public void paymentSucceeded(PaymentNotification notification) {
+        record("succeeded", notification);
     }
 
     @Override
-    public void paymentFailed(String reference) {
-        record("failed " + reference);
+    public void paymentFailed(PaymentNotification notification) {
+        record("failed", notification);
     }
 
-    private void record(String call) {
+    private void record(String call, PaymentNotification notification) {
         if (unavailable) {
             throw new PaymentUnavailable("fake provider is down", null);
         }
-        calls.add(call);
+        calls.add(call + " " + notification.reference() + " by " + notification.messageId());
     }
 }

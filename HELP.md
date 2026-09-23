@@ -85,7 +85,7 @@ Stripe's SDK does not log requests itself.
 | 3 | Read products and prices, show them on a page | done |
 | 4 | Stripe Checkout: a checkout session, success and cancel pages | done |
 | 5 | Webhooks: `checkout.session.completed` marks an order paid | done |
-| 6 | Idempotency, `metadata` and `client_reference_id` | |
+| 6 | Idempotency, `metadata` and `client_reference_id` | done |
 | 7 | Declined cards, 3-D Secure, refunds | |
 | 8 | A supporting membership as a subscription, Customer Portal | optional |
 | 9 | Own payment form with the Payment Element | optional |
@@ -157,9 +157,8 @@ exchange, from the catalog to this message.
   `checkout.session.async_payment_*` events settle a waiting order. Every other type is
   acknowledged with 200 and dropped.
 - **Twice and out of order is normal.** Stripe delivers at least once and does not promise
-  the order. The session id is the order's reference, so a second message finds the order
-  and changes nothing. A late verdict that arrives before its checkout places the order
-  itself. Step 6 looks at idempotency beyond this.
+  the order. A late verdict that arrives before its checkout places the order itself. What
+  keeps a repeat harmless is below, under "Nothing happens twice".
 - **Retry or not.** When Stripe cannot be asked about the session, the answer is 500 and
   Stripe tries again later (a live endpoint for up to three days; `stripe listen` does not
   retry, there `stripe events resend <evt_...>` sends an event again by hand). When the message contradicts the order, such as
@@ -167,6 +166,35 @@ exchange, from the catalog to this message.
   answer.
 - **Lines are copied.** The order keeps the names and quantities as they were sold, not
   references to the catalog.
+
+### Nothing happens twice
+
+Both directions can repeat themselves, and each is guarded where it happens.
+
+**Going out**, the buy button is the risk: two clicks, or one click and a reload, are two
+`POST /checkout`. Every button on a rendered catalog page carries an **attempt**, a UUID drawn
+when the page is built, and the attempt becomes the **idempotency key** of the call that opens
+the checkout. Stripe answers the second call with the session of the first instead of opening
+another one, and `StripePaymentPageIT` shows it against the real sandbox. Stripe remembers such
+a key for 24 hours, which is longer than anybody keeps a catalog page open.
+
+**Coming in**, three things guard the webhook, and each covers what the others do not:
+
+- **The message id.** `HandledMessages` remembers every `evt_...` that has been dealt with. It
+  is written down **after** the message is through, never before — one that failed halfway is
+  meant to be delivered again.
+- **The order's reference.** The session id is the key of the order, so a message about a
+  checkout that already has one finds that one.
+- **The status itself.** `paymentSucceeded` on a paid order changes nothing (see `Order`).
+
+### Sessions of this shop only
+
+Every session greenshop opens carries `metadata.source=greenshop`, the product in
+`metadata.product`, and the attempt as `client_reference_id`. The Stripe adapter reports only
+sessions that carry that mark; everything else is not ours, and the service drops the message
+with a line in the log. That matters as soon as something else lives on the same account — and
+right away for `stripe trigger checkout.session.completed`, whose made-up session would
+otherwise turn into an order for a product nobody sells here.
 
 ### Orders in memory, for now
 

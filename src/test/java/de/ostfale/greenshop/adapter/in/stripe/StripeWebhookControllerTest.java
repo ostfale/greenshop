@@ -46,7 +46,7 @@ class StripeWebhookControllerTest {
     void placesTheOrderWhenTheCheckoutIsCompleted() throws Exception {
         send(event("checkout.session.completed", "cs_test_1"), SECRET).andExpect(status().isOk());
 
-        assertThat(confirmPayment.calls()).containsExactly("completed cs_test_1");
+        assertThat(confirmPayment.calls()).containsExactly("completed cs_test_1 by evt_test_1");
     }
 
     @Test
@@ -54,7 +54,8 @@ class StripeWebhookControllerTest {
         send(event("checkout.session.async_payment_succeeded", "cs_test_1"), SECRET).andExpect(status().isOk());
         send(event("checkout.session.async_payment_failed", "cs_test_2"), SECRET).andExpect(status().isOk());
 
-        assertThat(confirmPayment.calls()).containsExactly("succeeded cs_test_1", "failed cs_test_2");
+        assertThat(confirmPayment.calls())
+                .containsExactly("succeeded cs_test_1 by evt_test_1", "failed cs_test_2 by evt_test_1");
     }
 
     @Test

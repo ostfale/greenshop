@@ -20,9 +20,12 @@ So far:
   for its money, and settles a late payment. `/orders` lists them. They live in memory and
   are gone after a restart.
 
+- **Does nothing twice**: two clicks on a buy button open one checkout (an idempotency key), a
+  webhook delivered again is dropped by its message id, and only sessions marked as this
+  shop's own become orders.
+
 Next, one step at a time (see `HELP.md` for the full path):
 
-- Idempotency beyond the order itself, `metadata` on the session.
 - Refunds and failed payments. Later a supporting membership as a subscription.
 
 ## Stack

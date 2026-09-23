@@ -63,12 +63,16 @@ If Stripe cannot be reached, the page stays and says so, with status 503.
 
 ## B — Starting the purchase
 
-5. **`POST /checkout` with `productId`** and nothing else. No price, no quantity, no amount.
+5. **`POST /checkout` with `productId` and `attempt`.** The attempt is a UUID drawn when the
+   catalog page was built, one per button. No price, no quantity, no amount.
 6. **`GET /v1/products/{id}`** — the price is fetched again at the moment of purchase, not
    carried over from the list. Unknown or archived means not for sale, answered with 404.
 7. **`POST /v1/checkout/sessions`** — mode `payment`, one line item with the price id, an
    adjustable quantity from 1 to 10, a shipping address for Germany, and the two return
-   addresses. The success address carries the placeholder `{CHECKOUT_SESSION_ID}`.
+   addresses. The success address carries the placeholder `{CHECKOUT_SESSION_ID}`. The session
+   is marked as ours (`metadata.source=greenshop`, `metadata.product`) and carries the attempt
+   as `client_reference_id`; the attempt is also the **idempotency key** of this call, so a
+   second click opens no second checkout but gets the first one back.
 
 **The amount never comes from the browser.** greenshop sends a price id to Stripe, not a
 number. Tampering with the form can at most buy another product — at that product's real price.
@@ -91,7 +95,8 @@ into the catalog and says once that nothing was charged. No order comes into bei
     placeholder from step 7 with the real session id.
 12. **`GET /checkout/success`** — the id comes out of the browser and is nothing to build on.
 13. **`GET /v1/checkout/sessions/{id}?expand[]=line_items`** — the line items are not part of a
-    session and come only with `expand`. An id Stripe does not know is answered with 404.
+    session and come only with `expand`. An id Stripe does not know is answered with 404, and
+    so is a session without our mark in its metadata: Stripe may know it, but it is not ours.
 14. **The thank-you page**: "2 × Schal", the total, and a badge with what Stripe reports right
     now — paid or not paid yet. Nothing is created.
 
@@ -111,9 +116,12 @@ can call the address with any id.
     the verdict arrives minutes or days after, and turns the waiting order into a paid or a
     failed one.
 
-**Twice and out of order is normal.** Stripe delivers at least once and promises no order. The
-session id is the order's reference: a second message finds the order that is there, and a late
-verdict arriving before its checkout places the order itself.
+**Twice and out of order is normal.** Stripe delivers at least once and promises no order. A
+late verdict arriving before its checkout places the order itself, and three things keep a
+repeat harmless: the message id of the event, which is written down only once the message is
+through; the session id as the order's reference; and a status change that has already happened
+and changes nothing. A message about a session that is not marked as this shop's own is
+dropped.
 
 ## What greenshop answers
 

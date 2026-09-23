@@ -18,6 +18,7 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Map;
+import java.util.UUID;
 
 @Controller
 class CheckoutController {
@@ -37,8 +38,8 @@ class CheckoutController {
      * there does not send the form again.
      */
     @PostMapping("/checkout")
-    ResponseEntity<Void> buy(@RequestParam String productId) {
-        var paymentPage = startPurchase.start(productId);
+    ResponseEntity<Void> buy(@RequestParam String productId, @RequestParam UUID attempt) {
+        var paymentPage = startPurchase.start(productId, attempt);
         return ResponseEntity.status(HttpStatus.SEE_OTHER).location(paymentPage).build();
     }
 

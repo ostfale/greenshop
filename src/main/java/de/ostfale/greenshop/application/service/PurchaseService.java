@@ -8,10 +8,11 @@ import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
- * Hands the purchase through to the payment page. Once the payment is confirmed by webhook
- * (step 5) this is where an order comes into being.
+ * Hands the purchase through to the payment page. The order comes into being elsewhere, when
+ * the provider confirms the payment.
  */
 @Service
 class PurchaseService implements StartPurchase, ShowPurchase {
@@ -23,8 +24,8 @@ class PurchaseService implements StartPurchase, ShowPurchase {
     }
 
     @Override
-    public URI start(String productId) {
-        return paymentPage.open(productId);
+    public URI start(String productId, UUID attempt) {
+        return paymentPage.open(productId, attempt);
     }
 
     @Override

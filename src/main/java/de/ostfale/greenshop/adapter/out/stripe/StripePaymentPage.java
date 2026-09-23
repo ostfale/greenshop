@@ -3,6 +3,7 @@ package de.ostfale.greenshop.adapter.out.stripe;
 import com.stripe.StripeClient;
 import com.stripe.exception.InvalidRequestException;
 import com.stripe.exception.StripeException;
+import com.stripe.net.RequestOptions;
 import com.stripe.param.ProductRetrieveParams;
 import com.stripe.param.checkout.SessionCreateParams;
 import com.stripe.param.checkout.SessionCreateParams.LineItem;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Component;
 
 import java.net.URI;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Stripe Checkout as the payment page. Two calls: the product with its default price, fresh,
@@ -42,6 +44,10 @@ class StripePaymentPage implements PaymentPage {
     static final String CANCEL_PATH = ReturnAddresses.CANCEL;
     static final long MOST_AT_ONCE = 10;
 
+    /** The mark on every session this shop opens, and the value it carries. */
+    static final String SOURCE = "source";
+    static final String SHOP = "greenshop";
+
     private static final Logger log = LoggerFactory.getLogger(StripePaymentPage.class);
 
     private final StripeClient stripe;
@@ -53,11 +59,14 @@ class StripePaymentPage implements PaymentPage {
     }
 
     @Override
-    public URI open(String productId) {
+    public URI open(String productId, UUID attempt) {
         try {
             var priceId = sellablePriceOf(productId);
             var params = SessionCreateParams.builder()
                     .setMode(Mode.PAYMENT)
+                    .setClientReferenceId(attempt.toString())
+                    .putMetadata(SOURCE, SHOP)
+                    .putMetadata("product", productId)
                     .addLineItem(LineItem.builder()
                             .setPrice(priceId)
                             .setQuantity(1L)
@@ -74,7 +83,10 @@ class StripePaymentPage implements PaymentPage {
                     .setSuccessUrl(shop.address(SUCCESS_PATH))
                     .setCancelUrl(shop.address(CANCEL_PATH))
                     .build();
-            var session = stripe.v1().checkout().sessions().create(params);
+            var options = RequestOptions.builder()
+                    .setIdempotencyKey("checkout-" + attempt)
+                    .build();
+            var session = stripe.v1().checkout().sessions().create(params, options);
             log.debug("StripePaymentPage :: checkout session {} for {} with {}", session.getId(), productId, priceId);
             return URI.create(session.getUrl());
         } catch (StripeException e) {
@@ -85,12 +97,19 @@ class StripePaymentPage implements PaymentPage {
     /**
      * The session with its line items. They are not part of a session by default and come
      * only with {@code expand}; an unknown id is a 404 from Stripe and an empty answer here.
+     * <p>
+     * A session without our mark in its metadata is somebody else's — a fixture of
+     * {@code stripe trigger}, another application on the same account — and is passed over.
      */
     @Override
     public Optional<CheckoutSummary> find(String reference) {
         try {
             var params = SessionRetrieveParams.builder().addExpand("line_items").build();
             var session = stripe.v1().checkout().sessions().retrieve(reference, params);
+            if (!SHOP.equals(session.getMetadata().get(SOURCE))) {
+                log.debug("StripePaymentPage :: session {} did not start in this shop", reference);
+                return Optional.empty();
+            }
             var items = session.getLineItems().getData().stream()
                     .map(item -> new CheckoutSummary.Item(item.getDescription(), item.getQuantity()))
                     .toList();

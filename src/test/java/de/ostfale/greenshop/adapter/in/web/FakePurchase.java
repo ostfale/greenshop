@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Both purchase use cases as a web test sees them.
@@ -20,6 +21,11 @@ class FakePurchase implements StartPurchase, ShowPurchase {
     private Set<String> forSale = Set.of();
     private final Map<String, CheckoutSummary> purchases = new HashMap<>();
     private boolean unavailable;
+    private UUID lastAttempt;
+
+    UUID lastAttempt() {
+        return lastAttempt;
+    }
 
     void selling(String... productIds) {
         this.forSale = Set.of(productIds);
@@ -35,7 +41,8 @@ class FakePurchase implements StartPurchase, ShowPurchase {
     }
 
     @Override
-    public URI start(String productId) {
+    public URI start(String productId, UUID attempt) {
+        lastAttempt = attempt;
         if (unavailable) {
             throw new PaymentUnavailable("fake payment is down", null);
         }

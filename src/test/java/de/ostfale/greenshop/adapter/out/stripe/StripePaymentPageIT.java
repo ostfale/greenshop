@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -34,9 +35,34 @@ class StripePaymentPageIT {
     void opensStripesCheckoutForAProductOfTheCatalog() {
         var product = catalog.productsForSale().getFirst();
 
-        var address = paymentPage.open(product.id());
+        var address = paymentPage.open(product.id(), UUID.randomUUID());
 
         assertThat(address.getHost()).isEqualTo("checkout.stripe.com");
+    }
+
+    /**
+     * The point of the idempotency key: the second call opens no second checkout, Stripe
+     * answers it with the session of the first.
+     */
+    @Test
+    void theSameAttemptTwiceOpensOneCheckout() {
+        var product = catalog.productsForSale().getFirst();
+        var attempt = UUID.randomUUID();
+
+        var first = paymentPage.open(product.id(), attempt);
+        var second = paymentPage.open(product.id(), attempt);
+
+        assertThat(second).isEqualTo(first);
+    }
+
+    @Test
+    void anotherAttemptOpensAnotherCheckout() {
+        var product = catalog.productsForSale().getFirst();
+
+        var first = paymentPage.open(product.id(), UUID.randomUUID());
+        var second = paymentPage.open(product.id(), UUID.randomUUID());
+
+        assertThat(second).isNotEqualTo(first);
     }
 
     @Test
@@ -47,6 +73,6 @@ class StripePaymentPageIT {
     @Test
     void refusesAProductThatDoesNotExist() {
         assertThatExceptionOfType(ProductNotForSale.class)
-                .isThrownBy(() -> paymentPage.open("prod_doesnotexist"));
+                .isThrownBy(() -> paymentPage.open("prod_doesnotexist", UUID.randomUUID()));
     }
 }
