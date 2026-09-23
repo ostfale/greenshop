@@ -47,6 +47,11 @@ class FakeConfirmPayment implements ConfirmPayment {
         record("failed", notification);
     }
 
+    @Override
+    public void paymentRefunded(PaymentNotification notification) {
+        record("refunded", notification);
+    }
+
     private void record(String call, PaymentNotification notification) {
         if (unavailable) {
             throw new PaymentUnavailable("fake provider is down", null);

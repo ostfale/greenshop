@@ -86,7 +86,7 @@ Stripe's SDK does not log requests itself.
 | 4 | Stripe Checkout: a checkout session, success and cancel pages | done |
 | 5 | Webhooks: `checkout.session.completed` marks an order paid | done |
 | 6 | Idempotency, `metadata` and `client_reference_id` | done |
-| 7 | Declined cards, 3-D Secure, refunds | |
+| 7 | Declined cards, 3-D Secure, refunds | done |
 | 8 | A supporting membership as a subscription, Customer Portal | optional |
 | 9 | Own payment form with the Payment Element | optional |
 | 10 | Webhook tests with signed payloads, Stripe mocked | optional |
@@ -195,6 +195,31 @@ sessions that carry that mark; everything else is not ours, and the service drop
 with a line in the log. That matters as soon as something else lives on the same account — and
 right away for `stripe trigger checkout.session.completed`, whose made-up session would
 otherwise turn into an order for a product nobody sells here.
+
+### Giving money back
+
+The orders page carries a **Erstatten** button on every paid order. It refunds the whole
+amount — greenshop knows no partial refunds — and the button is gone as soon as the order is
+`REFUNDED`. Only `PAID` can be given back: a waiting order has no money to give back, and a
+failed one never had any. `Order` says so, not the page.
+
+The refund goes on the **payment**, not on the checkout, so the order keeps the payment intent
+it went through. That also solves the way back: Stripe reports a refund as `charge.refunded`,
+and a charge names its payment but not the checkout. `Orders.findByPayment` is that way back,
+which is why the webhook also catches a refund made by hand in the Dashboard.
+
+A refund that Stripe refuses — already refunded, never charged — arrives as an invalid request,
+not as a broken connection. It becomes `RefundRefused`, the order stays `PAID`, and the page
+says so. Stripe is asked first and the order is only written afterwards: a refund that did not
+go through must not leave a refunded order behind.
+
+### What a declined card does, and what it does not
+
+Nothing of a failed payment reaches greenshop, and that is the point. `4000 0000 0000 9995` is
+refused on Stripe's page, the customer stays there and can try another card; no session is
+completed, no webhook arrives, no order is placed. `4000 0027 6000 3184` asks for 3-D Secure:
+confirmed, it ends like any other card, and refused, it ends like the declined one. An order
+exists only where money moved.
 
 ### Orders in memory, for now
 

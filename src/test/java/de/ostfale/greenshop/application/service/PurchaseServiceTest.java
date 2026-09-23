@@ -34,7 +34,7 @@ class PurchaseServiceTest {
 
     @Test
     void findsTheCheckoutTheCustomerCameBackFrom() {
-        var checkout = new CheckoutSummary(List.of(new CheckoutSummary.Item("Schal", 1)), Money.of(2200, "eur"), true);
+        var checkout = new CheckoutSummary(List.of(new CheckoutSummary.Item("Schal", 1)), Money.of(2200, "eur"), true, "pi_test_1");
         paymentPage.knowing("cs_test_1", checkout);
 
         assertThat(service.purchase("cs_test_1")).contains(checkout);

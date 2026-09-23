@@ -114,9 +114,11 @@ class StripePaymentPage implements PaymentPage {
                     .map(item -> new CheckoutSummary.Item(item.getDescription(), item.getQuantity()))
                     .toList();
             var total = Money.of(session.getAmountTotal(), session.getCurrency());
+            var payment = session.getPaymentIntent();
             log.debug("StripePaymentPage :: session {} is {}, payment {}",
                     reference, session.getStatus(), session.getPaymentStatus());
-            return Optional.of(new CheckoutSummary(items, total, "paid".equals(session.getPaymentStatus())));
+            return Optional.of(
+                    new CheckoutSummary(items, total, "paid".equals(session.getPaymentStatus()), payment));
         } catch (InvalidRequestException e) {
             if (Integer.valueOf(404).equals(e.getStatusCode())) {
                 return Optional.empty();

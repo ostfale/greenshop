@@ -12,6 +12,12 @@ public interface Orders {
 
     Optional<Order> find(String reference);
 
+    /**
+     * The order that went through this payment. The provider reports a refund on the payment,
+     * not on the checkout, so this is the way back from one to the other.
+     */
+    Optional<Order> findByPayment(String payment);
+
     void save(Order order);
 
     /**

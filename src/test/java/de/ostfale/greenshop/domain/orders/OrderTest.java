@@ -49,10 +49,30 @@ class OrderTest {
 
     @Test
     void hasAtLeastOneLine() {
-        assertThatIllegalArgumentException().isThrownBy(() -> Order.placed("cs_test_1", List.of(), TOTAL, true, NOW));
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> Order.placed("cs_test_1", "pi_test_1", List.of(), TOTAL, true, NOW));
+    }
+
+    @Test
+    void onlyAPaidOrderIsGivenBack() {
+        assertThat(placed(true).refunded().status()).isEqualTo(OrderStatus.REFUNDED);
+        assertThatIllegalStateException().isThrownBy(() -> placed(false).refunded());
+        assertThatIllegalStateException().isThrownBy(() -> placed(false).paymentFailed().refunded());
+    }
+
+    @Test
+    void givingItBackTwiceIsTheSameAsOnce() {
+        var refunded = placed(true).refunded();
+
+        assertThat(refunded.refunded()).isEqualTo(refunded);
+    }
+
+    @Test
+    void aRefundedOrderIsNotPaidAgain() {
+        assertThatIllegalStateException().isThrownBy(() -> placed(true).refunded().paymentSucceeded());
     }
 
     private static Order placed(boolean paid) {
-        return Order.placed("cs_test_1", TWO_SCARVES, TOTAL, paid, NOW);
+        return Order.placed("cs_test_1", "pi_test_1", TWO_SCARVES, TOTAL, paid, NOW);
     }
 }

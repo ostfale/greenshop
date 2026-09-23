@@ -46,6 +46,8 @@ sequenceDiagram
     S->>G: POST /stripe/webhook · checkout.session.completed (signed)
     G-->>S: 200 OK · the order stands
     S->>G: async_payment_succeeded / _failed (later)
+    G->>S: POST /v1/refunds · on the payment, when the shop gives the order back
+    S->>G: charge.refunded · found by the payment, not the checkout
 ```
 
 ## A — Catalog
@@ -115,6 +117,17 @@ can call the address with any id.
 17. **`checkout.session.async_payment_succeeded` / `_failed`** — for methods that settle later
     the verdict arrives minutes or days after, and turns the waiting order into a paid or a
     failed one.
+18. **`charge.refunded`** — money went back, whether the shop asked for it or somebody pressed
+    refund in the Dashboard. The event is about a charge, which names its payment but not the
+    checkout, so the order is found by the payment it went through.
+
+## Giving an order back
+
+A paid order is refunded from `/orders`: `POST /orders/{reference}/refund` leads to
+`POST /v1/refunds` with the payment intent of that order and no amount, so Stripe gives back
+everything. Stripe is asked first and the order is written afterwards — a refund that did not go
+through must leave no refunded order behind. A refusal (already refunded, never charged) comes
+back as an invalid request, the order stays paid, and the page says so.
 
 **Twice and out of order is normal.** Stripe delivers at least once and promises no order. A
 late verdict arriving before its checkout places the order itself, and three things keep a
@@ -132,6 +145,7 @@ dropped.
 | any other type of event | Nothing, one line in the log | 200 |
 | signature missing or wrong | Nothing, nothing is read | 400 |
 | Stripe cannot be reached | Fail on purpose, so it is delivered again | 500 |
+| `charge.refunded` | The order behind that payment is marked refunded | 200 |
 | the message contradicts the order | Dropped — asking again would not help | 200 |
 
 ## Locally the CLI sits in between

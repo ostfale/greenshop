@@ -25,6 +25,13 @@ class InMemoryOrders implements Orders {
     }
 
     @Override
+    public Optional<Order> findByPayment(String payment) {
+        return byReference.values().stream()
+                .filter(order -> payment.equals(order.payment()))
+                .findFirst();
+    }
+
+    @Override
     public void save(Order order) {
         byReference.put(order.reference(), order);
     }

@@ -7,10 +7,11 @@ import java.util.Objects;
 
 /**
  * What a checkout holds, as the payment provider reports it right now: what was bought and how
- * many, the total, and whether the money is in. For showing, not for deciding — whether an
- * order is paid is settled by the provider's own message, not by a page somebody reloads.
+ * many, the total, whether the money is in, and which payment it went through. For showing, not
+ * for deciding — whether an order is paid is settled by the provider's own message, not by a
+ * page somebody reloads.
  */
-public record CheckoutSummary(List<Item> items, Money total, boolean paid) {
+public record CheckoutSummary(List<Item> items, Money total, boolean paid, String payment) {
 
     public CheckoutSummary {
         items = List.copyOf(items);

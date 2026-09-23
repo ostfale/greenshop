@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -22,7 +23,8 @@ import tools.jackson.databind.json.JsonMapper;
  * those bytes, and anything Spring parsed and wrote back would no longer match. A message
  * without a valid signature is refused with 400 before anything else is read from it.
  * <p>
- * From the event only the id of the session is taken, out of the raw JSON. The SDK can turn
+ * From the event only an id is taken, out of the raw JSON: of the session, or of the payment
+ * when a refund is reported. The SDK can turn
  * the event's object into a {@code Session} only when the event was written in the API version
  * the SDK was built for; the id is there in every version, and the session is looked up fresh
  * by the service anyway.
@@ -37,6 +39,7 @@ class StripeWebhookController {
     static final String CHECKOUT_COMPLETED = "checkout.session.completed";
     static final String ASYNC_PAYMENT_SUCCEEDED = "checkout.session.async_payment_succeeded";
     static final String ASYNC_PAYMENT_FAILED = "checkout.session.async_payment_failed";
+    static final String CHARGE_REFUNDED = "charge.refunded";
 
     private static final Logger log = LoggerFactory.getLogger(StripeWebhookController.class);
 
@@ -64,6 +67,7 @@ class StripeWebhookController {
                 case CHECKOUT_COMPLETED -> confirmPayment.checkoutCompleted(notificationOf(event));
                 case ASYNC_PAYMENT_SUCCEEDED -> confirmPayment.paymentSucceeded(notificationOf(event));
                 case ASYNC_PAYMENT_FAILED -> confirmPayment.paymentFailed(notificationOf(event));
+                case CHARGE_REFUNDED -> confirmPayment.paymentRefunded(refundNotificationOf(event));
                 default -> log.debug("StripeWebhookController :: {} ignored", event.getType());
             }
         } catch (PaymentUnavailable e) {
@@ -82,8 +86,18 @@ class StripeWebhookController {
      * first keeps a message from being dealt with twice, the second finds the order.
      */
     private static PaymentNotification notificationOf(Event event) {
-        var raw = event.getDataObjectDeserializer().getRawJson();
-        var sessionId = JsonMapper.shared().readTree(raw).path("id").asString();
-        return new PaymentNotification(event.getId(), sessionId);
+        return new PaymentNotification(event.getId(), objectOf(event).path("id").asString());
+    }
+
+    /**
+     * A refund is reported on the charge, and a charge names the payment it belongs to. The
+     * checkout is nowhere in it, so the order is found by its payment.
+     */
+    private static PaymentNotification refundNotificationOf(Event event) {
+        return new PaymentNotification(event.getId(), objectOf(event).path("payment_intent").asString());
+    }
+
+    private static JsonNode objectOf(Event event) {
+        return JsonMapper.shared().readTree(event.getDataObjectDeserializer().getRawJson());
     }
 }

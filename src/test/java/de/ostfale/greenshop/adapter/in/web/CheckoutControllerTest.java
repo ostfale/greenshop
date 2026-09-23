@@ -74,7 +74,7 @@ class CheckoutControllerTest {
 
     @Test
     void showsWhatWasBoughtHowManyAndWhetherItIsPaid() throws Exception {
-        purchase.knowing("cs_test_1", new CheckoutSummary(List.of(SCARVES), Money.of(4400, "eur"), true));
+        purchase.knowing("cs_test_1", new CheckoutSummary(List.of(SCARVES), Money.of(4400, "eur"), true, "pi_test_1"));
 
         var page = page(get("/checkout/success").param("session_id", "cs_test_1"), 200);
 
@@ -87,7 +87,7 @@ class CheckoutControllerTest {
 
     @Test
     void saysSoWhenThePaymentIsNotInYet() throws Exception {
-        purchase.knowing("cs_test_2", new CheckoutSummary(List.of(SCARVES), Money.of(4400, "eur"), false));
+        purchase.knowing("cs_test_2", new CheckoutSummary(List.of(SCARVES), Money.of(4400, "eur"), false, "pi_test_1"));
 
         var page = page(get("/checkout/success").param("session_id", "cs_test_2"), 200);
 

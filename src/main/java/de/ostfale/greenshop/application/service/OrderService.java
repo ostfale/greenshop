@@ -2,11 +2,13 @@ package de.ostfale.greenshop.application.service;
 
 import de.ostfale.greenshop.application.port.in.ConfirmPayment;
 import de.ostfale.greenshop.application.port.in.PaymentNotification;
+import de.ostfale.greenshop.application.port.in.RefundPurchase;
 import de.ostfale.greenshop.application.port.in.ShowOrders;
 import de.ostfale.greenshop.application.port.out.CheckoutSummary;
 import de.ostfale.greenshop.application.port.out.HandledMessages;
 import de.ostfale.greenshop.application.port.out.Orders;
 import de.ostfale.greenshop.application.port.out.PaymentPage;
+import de.ostfale.greenshop.application.port.out.PaymentRefunds;
 import de.ostfale.greenshop.domain.orders.Order;
 import de.ostfale.greenshop.domain.orders.OrderLine;
 import org.slf4j.Logger;
@@ -33,17 +35,20 @@ import java.util.function.UnaryOperator;
  * itself. Whichever comes first places the order, the rest only move its status.
  */
 @Service
-class OrderService implements ConfirmPayment, ShowOrders {
+class OrderService implements ConfirmPayment, ShowOrders, RefundPurchase {
 
     private static final Logger log = LoggerFactory.getLogger(OrderService.class);
 
     private final PaymentPage paymentPage;
+    private final PaymentRefunds refunds;
     private final Orders orders;
     private final HandledMessages handledMessages;
     private final Clock clock;
 
-    OrderService(PaymentPage paymentPage, Orders orders, HandledMessages handledMessages, Clock clock) {
+    OrderService(PaymentPage paymentPage, PaymentRefunds refunds, Orders orders,
+                 HandledMessages handledMessages, Clock clock) {
         this.paymentPage = paymentPage;
+        this.refunds = refunds;
         this.orders = orders;
         this.handledMessages = handledMessages;
         this.clock = clock;
@@ -62,6 +67,34 @@ class OrderService implements ConfirmPayment, ShowOrders {
     @Override
     public void paymentFailed(PaymentNotification notification) {
         handle(notification, Order::paymentFailed);
+    }
+
+    @Override
+    public void paymentRefunded(PaymentNotification notification) {
+        if (handledMessages.alreadyHandled(notification.messageId())) {
+            log.debug("OrderService :: message {} was handled before", notification.messageId());
+            return;
+        }
+        var order = orders.findByPayment(notification.reference());
+        if (order.isEmpty()) {
+            log.debug("OrderService :: payment {} belongs to no order here", notification.reference());
+            return;
+        }
+        var refunded = order.get().refunded();
+        orders.save(refunded);
+        handledMessages.handled(notification.messageId());
+        log.info("OrderService :: order {} is {}", refunded.reference(), refunded.status());
+    }
+
+    @Override
+    public Order refund(String reference) {
+        var order = orders.find(reference)
+                .orElseThrow(() -> new IllegalArgumentException("no order under " + reference));
+        var refunded = order.refunded();
+        refunds.refund(order.payment());
+        orders.save(refunded);
+        log.info("OrderService :: order {} refunded on payment {}", reference, order.payment());
+        return refunded;
     }
 
     @Override
@@ -91,8 +124,8 @@ class OrderService implements ConfirmPayment, ShowOrders {
      * order behind. The new order is not saved here — the one save is in {@link #handle}.
      */
     private Optional<Order> place(String reference) {
-        return paymentPage.find(reference).map(checkout ->
-                Order.placed(reference, lines(checkout), checkout.total(), checkout.paid(), Instant.now(clock)));
+        return paymentPage.find(reference).map(checkout -> Order.placed(reference, checkout.payment(),
+                lines(checkout), checkout.total(), checkout.paid(), Instant.now(clock)));
     }
 
     private static List<OrderLine> lines(CheckoutSummary checkout) {

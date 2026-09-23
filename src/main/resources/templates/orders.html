@@ -13,6 +13,14 @@
         Dankeseite kommt. Sie liegen im Speicher und sind nach einem Neustart weg.
     </p>
 
+    <p id="refunded" class="notice" th:if="${refunded}">
+        Erstattet: <span th:text="${@prices.format(refunded)}">44,00 €</span> gehen zurück.
+    </p>
+
+    <p id="refundRefused" class="error" th:if="${refundRefused}">
+        Diese Bestellung lässt sich nicht erstatten. Vielleicht ist sie es schon.
+    </p>
+
     <div class="card">
         <p id="empty" class="empty" th:if="${#lists.isEmpty(orders)}">
             Noch keine Bestellungen.
@@ -25,6 +33,7 @@
                 <th>Positionen</th>
                 <th class="amount">Summe</th>
                 <th>Status</th>
+                <th><span hidden>Erstatten</span></th>
             </tr>
             </thead>
             <tbody>
@@ -40,6 +49,13 @@
                     <span class="badge" th:case="'PAID'">bezahlt</span>
                     <span class="badge warn" th:case="'AWAITING_PAYMENT'">wartet auf Zahlung</span>
                     <span class="badge stop" th:case="'FAILED'">fehlgeschlagen</span>
+                    <span class="badge quiet" th:case="'REFUNDED'">erstattet</span>
+                </td>
+                <td class="action">
+                    <form method="post" th:if="${order.status.name() == 'PAID'}"
+                          th:action="@{/orders/{reference}/refund(reference=${order.reference})}">
+                        <button type="submit" class="secondary">Erstatten</button>
+                    </form>
                 </td>
             </tr>
             </tbody>

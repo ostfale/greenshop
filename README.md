@@ -24,9 +24,12 @@ So far:
   webhook delivered again is dropped by its message id, and only sessions marked as this
   shop's own become orders.
 
+- **Gives money back**: a paid order can be refunded in full from `/orders`, and a refund made
+  in Stripe's Dashboard finds its order through the payment it went through.
+
 Next, one step at a time (see `HELP.md` for the full path):
 
-- Refunds and failed payments. Later a supporting membership as a subscription.
+- A supporting membership as a subscription, with the Customer Portal.
 
 ## Stack
 

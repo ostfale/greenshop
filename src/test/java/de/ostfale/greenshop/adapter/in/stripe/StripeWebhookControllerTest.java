@@ -58,6 +58,21 @@ class StripeWebhookControllerTest {
                 .containsExactly("succeeded cs_test_1 by evt_test_1", "failed cs_test_2 by evt_test_1");
     }
 
+    /**
+     * A refund is reported on the charge, which names its payment — the checkout appears
+     * nowhere in it.
+     */
+    @Test
+    void passesOnARefundByItsPayment() throws Exception {
+        var charge = """
+                {"id":"evt_test_2","object":"event","api_version":"2020-08-27","type":"charge.refunded",\
+                "data":{"object":{"id":"ch_test_1","object":"charge","payment_intent":"pi_test_1"}}}""";
+
+        send(charge, SECRET).andExpect(status().isOk());
+
+        assertThat(confirmPayment.calls()).containsExactly("refunded pi_test_1 by evt_test_2");
+    }
+
     @Test
     void refusesAMessageSignedWithAnotherSecret() throws Exception {
         send(event("checkout.session.completed", "cs_test_1"), "whsec_somebody_else").andExpect(status().isBadRequest());

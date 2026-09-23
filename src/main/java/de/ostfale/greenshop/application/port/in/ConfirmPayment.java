@@ -30,4 +30,11 @@ public interface ConfirmPayment {
      * @throws PaymentUnavailable if the checkout cannot be looked up
      */
     void paymentFailed(PaymentNotification notification);
+
+    /**
+     * Money went back. Here the reference is the payment, not the checkout: the provider
+     * reports a refund on what it charged. A payment nobody here knows is dropped, and so is a
+     * refund the shop asked for itself, which has already been written down.
+     */
+    void paymentRefunded(PaymentNotification notification);
 }
