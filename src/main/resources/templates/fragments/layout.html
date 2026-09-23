@@ -13,6 +13,7 @@
     <a class="wordmark" th:href="@{/}">greenshop</a>
     <nav>
         <a th:href="@{/}" th:classappend="${here} == 'catalog' ? 'here'">Katalog</a>
+        <a th:href="@{/orders}" th:classappend="${here} == 'orders' ? 'here'">Bestellungen</a>
     </nav>
 </header>
 </body>
