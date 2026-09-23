@@ -50,6 +50,8 @@ product of its own, and so sends the same events as a purchase through the brows
 - **Port**: 8484, overridable with `PORT`.
 - **Base URL**: `greenshop.base-url`, by default `http://localhost:<port>`, overridable with
   `BASE_URL`. Stripe sends the customer back to addresses below it.
+- **Database**: an H2 file under `./data`, overridable with `DB_URL`. Flyway builds the schema
+  at startup. Deleting the folder starts the orders over.
 - **Logging**: to the console. `de.ostfale.greenshop` logs on DEBUG and everything else on
   INFO, so the application's own lines are not drowned out by Spring and Tomcat.
 - **Version**: the banner shows the version from the POM. Maven filters it into
@@ -62,6 +64,8 @@ product of its own, and so sends the same events as a purchase through the brows
   the two properties records.
 - **Service tests** against fakes of the outgoing ports, such as `FakeProductCatalog`. No
   mocking framework: a fake is a small class that holds what the test puts in.
+- **`JdbcOrdersTest`**: the database adapter against a real H2 in memory, with the Flyway
+  migration the application uses.
 - **Web tests** with `@WebMvcTest` and a fake of the incoming port. They parse the rendered
   page with jsoup and check what is on it, not the model.
 - **`StripeWebhookControllerTest`**: signs its messages the way Stripe does (HMAC-SHA256 over
@@ -98,7 +102,7 @@ Stripe's SDK does not log requests itself.
     de.ostfale.greenshop
     ├── domain        records and value objects, plain Java
     ├── application   port.in, port.out, service
-    ├── adapter       in.web, in.stripe, out.stripe, out.memory
+    ├── adapter       in.web, in.stripe, out.stripe, out.database
     └── config
 
 The layout follows `greenroom`. **Stripe is known only where Stripe is the other side**:
@@ -221,11 +225,22 @@ completed, no webhook arrives, no order is placed. `4000 0027 6000 3184` asks fo
 confirmed, it ends like any other card, and refused, it ends like the declined one. An order
 exists only where money moved.
 
-### Orders in memory, for now
+### Orders in H2, written with plain SQL
 
-`Orders` is a port. For now `adapter.out.memory.InMemoryOrders` implements it, as a
-`ConcurrentHashMap` that is gone with every restart. That keeps step 5 about the webhook and
-not about a database. PostgreSQL can take the same port later without the service noticing.
+`Orders` and `HandledMessages` are ports; `adapter.out.database` implements both against an
+**H2 file** under `./data` (git ignores it). H2, not PostgreSQL: greenshop is about Stripe, and
+a file needs no Docker and no container in the tests. greenroom forbids H2 for a reason — there
+the database carries data nobody enters twice — but here that reason does not apply.
+
+The adapter writes **plain SQL through `JdbcClient`**, no Spring Data, no mapping annotations.
+Two tables and a handful of statements do not earn a repository, and the domain stays free of
+the database: an `Order` is read as a row plus its lines and handed back as a record. The
+schema is a **Flyway** migration, `V1__schema.sql`, the same mechanism as in greenroom.
+
+Two things are H2's own and would read differently on PostgreSQL: `merge into ... key (...)`
+instead of `insert ... on conflict do update`, and `timestamp` rather than
+`timestamp with time zone`. `JdbcOrdersTest` runs against a real H2 in memory, with the same
+migration.
 
 Trying it: `4242 4242 4242 4242` pays, `4000 0027 6000 3184` asks for 3-D Secure, and
 `4000 0000 0000 9995` is declined. Any future date and any CVC work.

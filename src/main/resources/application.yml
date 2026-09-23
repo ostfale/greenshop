@@ -2,6 +2,12 @@ spring:
   application:
     name: greenshop
     version: "@project.version@"
+  datasource:
+    # A file beside the project, so the orders outlive a restart. AUTO_SERVER lets a second
+    # process — a database viewer — look into it while the application runs.
+    url: ${DB_URL:jdbc:h2:file:./data/greenshop;AUTO_SERVER=TRUE}
+    username: ${DB_USER:sa}
+    password: ${DB_PASSWORD:}
 
 server:
   port: ${PORT:8484}
