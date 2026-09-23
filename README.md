@@ -14,12 +14,15 @@ So far:
   reached, the page stays and says so.
 - **Sells through Stripe Checkout**: a buy button per product leads to Stripe's hosted payment
   page, where the customer picks how many (1 to 10) and gives a shipping address in Germany.
-  Afterwards a thank-you page shows what was bought
-  and whether Stripe reports it paid. A cancel leads back to the catalog.
+  Afterwards a thank-you page shows what was bought and whether Stripe reports it paid. A
+  cancel leads back to the catalog.
+- **Keeps the orders Stripe confirms**: a signed webhook places the order, paid or waiting
+  for its money, and settles a late payment. `/orders` lists them. They live in memory and
+  are gone after a restart.
 
 Next, one step at a time (see `HELP.md` for the full path):
 
-- Confirm the payment through a webhook, not the redirect, and keep the order.
+- Idempotency beyond the order itself, `metadata` on the session.
 - Refunds and failed payments. Later a supporting membership as a subscription.
 
 ## Stack
@@ -34,17 +37,20 @@ Next, one step at a time (see `HELP.md` for the full path):
 ## Tools
 
 - **IntelliJ IDEA**: the Stripe key lives in the run configurations, never in a file.
-- **Stripe CLI**: logs in to the sandbox, creates test data, and later forwards webhooks to
-  the local application.
+- **Stripe CLI**: logs in to the sandbox, creates test data, and forwards webhooks to the
+  local application with `stripe listen`.
 - **Stripe Dashboard**: the other side. It shows products, payments, events and every API
   request the application made.
 
 ## Running it
 
     ./mvnw verify              # build and all tests, without Stripe
-    ./mvnw spring-boot:run     # needs STRIPE_SECRET_KEY, listens on 8484
+    ./mvnw spring-boot:run     # needs STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET, port 8484
+    stripe listen --forward-to localhost:8484/stripe/webhook
 
 ## Where the rest is
 
 - **`HELP.md`**: how it is set up and run, the learning path, and the decisions behind the
   design.
+- **`docs/payment-flow.md`**: every message between customer, greenshop and Stripe during a
+  purchase, as a sequence diagram and step by step.

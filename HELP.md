@@ -27,10 +27,22 @@ key of the application.
 new run configuration of its own, and it inherits the variable only from the template. Both
 end up in `.idea/workspace.xml`, which git ignores.
 
+`STRIPE_WEBHOOK_SECRET` goes into the run configuration of `GreenshopApplication` as well. It
+is the `whsec_...` that `stripe listen` prints when it starts, or `stripe listen --print-secret`
+without starting. It usually stays the same between runs, so it is set once. An endpoint created in
+the Dashboard has a secret of its own, and that one does not verify what the CLI forwards.
+
 ## Building and running it
 
     ./mvnw verify              # build and all tests, without Stripe
-    ./mvnw spring-boot:run     # needs STRIPE_SECRET_KEY
+    ./mvnw spring-boot:run     # needs STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET
+    stripe listen --forward-to localhost:8484/stripe/webhook
+    stripe trigger checkout.session.completed
+
+`stripe listen` runs in a terminal of its own for as long as webhooks are wanted, and shows
+every event it forwards with the status the application answered with. `stripe trigger`
+creates a whole purchase in the sandbox, with a product of its own, and so sends the same
+events as a purchase through the browser.
 
 - **Port**: 8484, overridable with `PORT`.
 - **Base URL**: `greenshop.base-url`, by default `http://localhost:<port>`, overridable with
@@ -43,14 +55,18 @@ end up in `.idea/workspace.xml`, which git ignores.
 
 ## Tests
 
-- **Unit tests** for the records: `Product`, `Money`, `StripeProperties`.
+- **Unit tests** for the records: `Product`, `Money`, `Order` with its status changes, and
+  the two properties records.
 - **Service tests** against fakes of the outgoing ports, such as `FakeProductCatalog`. No
   mocking framework: a fake is a small class that holds what the test puts in.
 - **Web tests** with `@WebMvcTest` and a fake of the incoming port. They parse the rendered
   page with jsoup and check what is on it, not the model.
+- **`StripeWebhookControllerTest`**: signs its messages the way Stripe does (HMAC-SHA256 over
+  `timestamp.payload`), so the real signature check runs without Stripe. A message signed
+  with another secret or changed after signing is refused.
 - **`ArchitectureTest`**: the Stripe SDK stays inside its two adapters (see below).
-- **`GreenshopApplicationTests`**: the context starts, with a dummy key.
-- **`StripeProductCatalogIT`** and **`StripePaymentPageIT`**: talk to the real sandbox. It runs only where
+- **`GreenshopApplicationTests`**: the context starts, with a dummy key and secret.
+- **`StripeProductCatalogIT`** and **`StripePaymentPageIT`**: talk to the real sandbox. They run only where
   `STRIPE_SECRET_KEY` is set and skips itself otherwise. Maven's surefire plugin does not
   pick up `*IT` classes, so `mvnw verify` never needs Stripe.
 
@@ -65,7 +81,7 @@ Stripe's SDK does not log requests itself.
 | 2 | Project skeleton, `StripeClient` as a bean | done |
 | 3 | Read products and prices, show them on a page | done |
 | 4 | Stripe Checkout: a checkout session, success and cancel pages | done |
-| 5 | Webhooks: `checkout.session.completed` marks an order paid | |
+| 5 | Webhooks: `checkout.session.completed` marks an order paid | done |
 | 6 | Idempotency, `metadata` and `client_reference_id` | |
 | 7 | Declined cards, 3-D Secure, refunds | |
 | 8 | A supporting membership as a subscription, Customer Portal | optional |
@@ -79,7 +95,7 @@ Stripe's SDK does not log requests itself.
     de.ostfale.greenshop
     ├── domain        records and value objects, plain Java
     ├── application   port.in, port.out, service
-    ├── adapter       in.web, in.stripe, out.stripe
+    ├── adapter       in.web, in.stripe, out.stripe, out.memory
     └── config
 
 The layout follows `greenroom`. **Stripe is known only where Stripe is the other side**:
@@ -119,6 +135,41 @@ reports right now, including "noch nicht bezahlt". It never marks anything as pa
 customer may close the tab before coming back, and anybody can call the address with any id.
 That is step 5, the webhook. The buy form is a POST answered with **303 See Other**, so the
 browser follows it with a GET and a reload does not send the form again.
+
+### The webhook decides
+
+An order comes into being only through Stripe's own message to `POST /stripe/webhook`, which
+Stripe sends whatever the customer's browser does. `docs/payment-flow.md` draws the whole
+exchange, from the catalog to this message.
+
+- **Signature first.** The body is taken as the raw string it arrived as, because the
+  signature is computed over exactly those bytes. `Webhook.constructEvent` checks it against
+  `stripe.webhook-secret`. Without a valid signature the answer is 400 and nothing is read.
+- **Only the id is taken from the event**, out of the raw JSON. The SDK can unpack the event's
+  object only when the event was written in the API version the SDK was built for, and the
+  sandbox writes events in the account's version. The id is there in every version, and the
+  service looks the session up fresh through the port it already has.
+- **Three types count.** `checkout.session.completed` places the order: `PAID` when the money
+  is in at the till (a card), `AWAITING_PAYMENT` when it comes later (a debit). The two
+  `checkout.session.async_payment_*` events settle a waiting order. Every other type is
+  acknowledged with 200 and dropped.
+- **Twice and out of order is normal.** Stripe delivers at least once and does not promise
+  the order. The session id is the order's reference, so a second message finds the order
+  and changes nothing. A late verdict that arrives before its checkout places the order
+  itself. Step 6 looks at idempotency beyond this.
+- **Retry or not.** When Stripe cannot be asked about the session, the answer is 500 and
+  Stripe tries again later (a live endpoint for up to three days; `stripe listen` does not
+  retry, there `stripe events resend <evt_...>` sends an event again by hand). When the message contradicts the order, such as
+  "failed" for a paid one, it is acknowledged, because asking again would not change the
+  answer.
+- **Lines are copied.** The order keeps the names and quantities as they were sold, not
+  references to the catalog.
+
+### Orders in memory, for now
+
+`Orders` is a port. For now `adapter.out.memory.InMemoryOrders` implements it, as a
+`ConcurrentHashMap` that is gone with every restart. That keeps step 5 about the webhook and
+not about a database. PostgreSQL can take the same port later without the service noticing.
 
 Trying it: `4242 4242 4242 4242` pays, `4000 0027 6000 3184` asks for 3-D Secure, and
 `4000 0000 0000 9995` is declined. Any future date and any CVC work.
