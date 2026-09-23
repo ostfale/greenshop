@@ -36,13 +36,16 @@ the Dashboard has a secret of its own, and that one does not verify what the CLI
 
     ./mvnw verify              # build and all tests, without Stripe
     ./mvnw spring-boot:run     # needs STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET
-    stripe listen --forward-to localhost:8484/stripe/webhook
+    stripe listen --forward-to localhost:8484/stripe/webhook \
+      --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed
     stripe trigger checkout.session.completed
 
 `stripe listen` runs in a terminal of its own for as long as webhooks are wanted, and shows
-every event it forwards with the status the application answered with. `stripe trigger`
-creates a whole purchase in the sandbox, with a product of its own, and so sends the same
-events as a purchase through the browser.
+every event it forwards with the status the application answered with. Newer CLI versions
+(1.51 here) insist on being told which events to forward: `--events` with the three types above, or
+`--all-snapshot` for every event of the classic API (`--all-thin` is the newer v2 kind, which
+greenshop does not use). `stripe trigger` creates a whole purchase in the sandbox, with a
+product of its own, and so sends the same events as a purchase through the browser.
 
 - **Port**: 8484, overridable with `PORT`.
 - **Base URL**: `greenshop.base-url`, by default `http://localhost:<port>`, overridable with
